@@ -1,0 +1,127 @@
+blueprint:
+  name: Exit Automation with Door/Window Check
+  author: LinumIQ
+  description: >
+    Automation triggered by a remote button double press that checks door/window
+    sensors and provides visual feedback via light color (green if closed, red if open)
+    before turning off specified switches.
+  domain: automation
+  input:
+    trigger_event:
+      name: Trigger Event
+      description: The device event that triggers this automation
+      selector:
+        trigger:
+    door_window_sensor:
+      name: Door/Window Sensor
+      description: Binary sensor group to check if doors/windows are open
+      default: binary_sensor.door_window_sensors
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    indicator_light:
+      name: Indicator Light
+      description: RGB light used to show door/window status (green=closed, red=open)
+      selector:
+        entity:
+          filter:
+            - domain: light
+    switches_to_turn_off:
+      name: Switches to Turn Off
+      description: List of switches to turn off when doors/windows are closed
+      selector:
+        target:
+          entity:
+            - domain: switch
+    indication_duration:
+      name: Indication Duration
+      description: How long to show the color indication (in seconds)
+      default: 1
+      selector:
+        number:
+          min: 0.5
+          max: 10
+          step: 0.5
+          unit_of_measurement: seconds
+          mode: slider
+
+trigger: !input trigger_event
+
+conditions: []
+
+actions:
+  - if:
+      - condition: state
+        entity_id: !input door_window_sensor
+        state: "off"
+    then:
+      - sequence:
+          - action: scene.create
+            metadata: {}
+            data:
+              scene_id: tmp_scene_before_color_indication
+              snapshot_entities:
+                - !input indicator_light
+          - action: light.turn_on
+            metadata: {}
+            data:
+              rgb_color:
+                - 0
+                - 255
+                - 0
+              brightness_pct: 100
+            target:
+              entity_id: !input indicator_light
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: !input indication_duration
+              milliseconds: 0
+          - action: scene.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: scene.tmp_scene_before_color_indication
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target: !input switches_to_turn_off
+  - if:
+      - condition: state
+        entity_id: !input door_window_sensor
+        state: "on"
+    then:
+      - sequence:
+          - action: scene.create
+            metadata: {}
+            data:
+              scene_id: tmp_scene_before_color_indication
+              snapshot_entities:
+                - !input indicator_light
+          - action: light.turn_on
+            metadata: {}
+            data:
+              brightness_pct: 100
+              rgb_color:
+                - 255
+                - 0
+                - 0
+            target:
+              entity_id: !input indicator_light
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: !input indication_duration
+              milliseconds: 0
+          - action: scene.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: scene.tmp_scene_before_color_indication
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target: !input switches_to_turn_off
+
+mode: single
