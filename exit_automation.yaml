@@ -53,6 +53,21 @@ conditions: []
 actions:
   - if:
       - condition: state
+        entity_id: !input indicator_light
+        state: "off"
+    then:
+      - action: light.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: !input indicator_light
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 1
+          milliseconds: 0
+  - if:
+      - condition: state
         entity_id: !input door_window_sensor
         state: "off"
     then:
